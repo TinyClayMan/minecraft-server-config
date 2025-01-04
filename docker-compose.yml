@@ -1,0 +1,47 @@
+services:
+  mc:
+    image: itzg/minecraft-server
+    tty: true
+    stdin_open: true
+    ports:
+      - "25567:25567"
+      - "8100:8100" # Bluemap
+    environment:
+      EULA: "TRUE"
+      VERSION: "1.21"
+      TYPE: "FABRIC"
+      INIT_MEMORY: 2G
+      MAX_MEMORY: 6G
+      SERVER_PORT: "25567"
+      DIFFICULTY: "hard"
+      ENABLE_COMMAND_BLOCK: true
+      ONLINE_MODE: true
+      MOTD: "Поиск это самое главное в жизни"
+      ICON: https://github.com/L3odr0id/minecraft-server-config/blob/main/server-icon.png?raw=true
+      ENABLE_WHITELIST: true
+      WHITELIST_FILE: https://raw.githubusercontent.com/L3odr0id/minecraft-server-config/refs/heads/main/whitelist.json
+      OPS_FILE: https://raw.githubusercontent.com/L3odr0id/minecraft-server-config/refs/heads/main/ops.json
+      REMOVE_OLD_MODS: true
+      CF_API_KEY: ${CF_API_KEY}
+      CURSEFORGE_FILES: |
+        https://www.curseforge.com/minecraft/mc-mods/carpet/files/5425253
+        https://www.curseforge.com/minecraft/mc-mods/fabric-api/files/5531908
+        https://www.curseforge.com/minecraft/mc-mods/carpet-tis-addition/files/5552247
+        https://www.curseforge.com/minecraft/mc-mods/toggle-item-frames/files/5430074
+        https://www.curseforge.com/minecraft/mc-mods/bluemap/files/5555757
+        https://www.curseforge.com/minecraft/mc-mods/tschipcrafts-dynamic-lights-mod/files/5521636
+        https://www.curseforge.com/minecraft/mc-mods/serversleep/files/4319020
+      MODRINTH_DOWNLOAD_DEPENDENCIES: required
+      MODRINTH_PROJECTS: |
+        blossomtpa:tCamZywU
+        lithium:my7uONjU
+        sit!:Nl20Sfvy
+      REMOVE_OLD_DATAPACKS: true
+      DATAPACKS: |
+        https://github.com/L3odr0id/minecraft-server-config/raw/refs/heads/main/datapacks/BlazeandCave's%20Advancements%20Pack%201.17.2.zip
+        https://github.com/L3odr0id/minecraft-server-config/raw/refs/heads/main/datapacks/afk%20display%20v1.0.1.zip
+        https://github.com/L3odr0id/minecraft-server-config/raw/refs/heads/main/datapacks/armor_stand_editor-v2.0.1.zip
+        https://github.com/L3odr0id/minecraft-server-config/raw/refs/heads/main/datapacks/more%20mob%20heads%20v2.12.1%20(MC%201.20.x).zip
+        https://github.com/L3odr0id/minecraft-server-config/raw/refs/heads/main/datapacks/player%20head%20drops%20v1.1.4%20(MC%201.20.x).zip
+    volumes:
+      - ./data:/data
