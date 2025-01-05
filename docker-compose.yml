@@ -3,8 +3,11 @@ services:
     image: itzg/minecraft-server
     tty: true
     stdin_open: true
+    depends_on:
+      restore-backup:
+        condition: service_completed_successfully
     ports:
-      - "25567:25567"
+      - "${MC_SERVER_PORT}:${MC_SERVER_PORT}"
       - "8100:8100" # Bluemap
     environment:
       EULA: "TRUE"
@@ -12,7 +15,7 @@ services:
       TYPE: "FABRIC"
       INIT_MEMORY: 2G
       MAX_MEMORY: 6G
-      SERVER_PORT: "25567"
+      SERVER_PORT: "${MC_SERVER_PORT}"
       DIFFICULTY: "hard"
       ENABLE_COMMAND_BLOCK: true
       ONLINE_MODE: true
@@ -44,4 +47,103 @@ services:
         https://github.com/L3odr0id/minecraft-server-config/raw/refs/heads/main/datapacks/more%20mob%20heads%20v2.12.1%20(MC%201.20.x).zip
         https://github.com/L3odr0id/minecraft-server-config/raw/refs/heads/main/datapacks/player%20head%20drops%20v1.1.4%20(MC%201.20.x).zip
     volumes:
-      - ./data:/data
+      - "${MC_DATA_PATH}:/data"
+
+  terminal_dogma:
+    image: alpine:latest
+    volumes:
+      - "./:/workspace"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    entrypoint:
+      - "/bin/sh"
+      - -cex
+      - |
+          cd /workspace
+          mkdir -p ${MC_DATA_PATH} ${MC_BACKUPS_PATH}
+          if [ -z "$(ls -A ${MC_BACKUPS_PATH})" ]; then
+            echo '$MC_BACKUPS_PATH is empty. Pulling latest backup from $HUB_REPO_NAME...'
+            apk update
+            apk add --no-cache docker
+            docker pull $DOCKER_IMAGE_TO_PULL
+            docker create --name temp_container $DOCKER_IMAGE_TO_PULL sh
+            docker cp temp_container:/data.tgz "${MC_BACKUPS_PATH}/data.tgz"
+            docker rm temp_container
+            echo "Backup pulled and saved"
+          else
+            echo 'MC_BACKUPS_PATH is not empty. Skipping pull.'
+          fi
+
+  restore-backup:
+    image: itzg/mc-backup
+    restart: "no"
+    entrypoint: restore-tar-backup
+    depends_on:
+      terminal_dogma:
+        condition: service_completed_successfully
+    volumes:
+      - "${MC_DATA_PATH}:/data"
+      - "${MC_BACKUPS_PATH}:/backups:ro"
+
+  backups:
+    image: itzg/mc-backup
+    depends_on:
+      mc:
+        condition: service_healthy
+    environment:
+      BACKUP_INTERVAL: "12h"
+      RCON_HOST: mc
+      INITIAL_DELAY: 0
+      PAUSE_IF_NO_PLAYERS: true
+      LINK_LATEST: true
+      EXCLUDES: bluemap/*,cache,logs,*.tmp,*.jar
+      SERVER_PORT: "${MC_SERVER_PORT}"
+      DOCKER_IMAGE: "${HUB_REPO_NAME}:latest"
+      POST_BACKUP_SCRIPT: |
+        echo "DEBUG. The backup is finished"
+    volumes:
+      - "${MC_DATA_PATH}:/data:ro"
+      - "${MC_BACKUPS_PATH}:/backups"
+
+  watchdog:
+    image: alpine:latest
+    depends_on:
+      terminal_dogma:
+        condition: service_completed_successfully
+    volumes:
+      - "${MC_BACKUPS_PATH}:/backups"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    entrypoint:
+      - "/bin/sh"
+      - -c
+      - |
+          apk update
+          apk add --no-cache inotify-tools docker
+          cd /backups
+          touch latest.tgz
+          LAST_MOD_TIME="$(stat -c='%Y' latest.tgz)"
+
+          while true; do
+            sleep 10
+            CURRENT_MOD_TIME="$(stat -c='%Y' latest.tgz)"
+
+            if [ "$$LAST_MOD_TIME" != "$$CURRENT_MOD_TIME" ]; then
+              LAST_MOD_TIME="$$CURRENT_MOD_TIME"
+              echo "Modification detected: executing commands..."
+              cat <<EOF > Dockerfile
+              FROM scratch
+              COPY latest.tgz /data.tgz
+          EOF
+
+              TIMESTAMP=$(date +%Y%m%d%H%M%S)
+              TIMESTAMP_IMAGE="${HUB_REPO_NAME}:$$TIMESTAMP"
+              docker build -t $$TIMESTAMP_IMAGE .
+              docker login --username "$HUB_LOGIN" --password "$HUB_PASSWORD"
+              docker push $$TIMESTAMP_IMAGE
+              docker tag "${HUB_REPO_NAME}:latest" $$TIMESTAMP_IMAGE
+              docker push "${HUB_REPO_NAME}:latest"
+              echo "Backup image pushed to $HUB_REPO_NAME"
+
+            else
+              echo "Nothing happened. $$LAST_MOD_TIME | $$CURRENT_MOD_TIME "
+            fi
+          done
