@@ -92,7 +92,7 @@ services:
     environment:
       BACKUP_INTERVAL: "12h"
       RCON_HOST: mc
-      INITIAL_DELAY: 0
+      INITIAL_DELAY: -1
       PAUSE_IF_NO_PLAYERS: true
       LINK_LATEST: true
       EXCLUDES: bluemap/*,cache,logs,*.tmp,*.jar
@@ -123,7 +123,7 @@ services:
           LAST_MOD_TIME="$(stat -c='%Y' latest.tgz)"
 
           while true; do
-            sleep 10
+            sleep 360
             CURRENT_MOD_TIME="$(stat -c='%Y' latest.tgz)"
 
             if [ "$$LAST_MOD_TIME" != "$$CURRENT_MOD_TIME" ]; then
