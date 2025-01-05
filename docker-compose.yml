@@ -38,7 +38,7 @@ services:
       MODRINTH_PROJECTS: |
         blossomtpa:I6w3glev
         lithium:t1FlWYl9
-        sit!:VpJc0iPk
+        sit!:LmDd9wsK
       REMOVE_OLD_DATAPACKS: true
       DATAPACKS: |
         https://github.com/L3odr0id/minecraft-server-config/raw/refs/heads/main/datapacks/BlazeandCaves%20Advancements%20Pack%201.18.1.zip
