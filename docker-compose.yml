@@ -90,7 +90,7 @@ services:
       mc:
         condition: service_healthy
     environment:
-      BACKUP_INTERVAL: "12h"
+      BACKUP_INTERVAL: "24h"
       RCON_HOST: mc
       INITIAL_DELAY: 0
       BACKUP_ON_STARTUP: false
