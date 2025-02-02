@@ -137,12 +137,12 @@ services:
 
               TIMESTAMP=$(date +%Y%m%d%H%M%S)
               TIMESTAMP_IMAGE="${HUB_REPO_NAME}:$$TIMESTAMP"
-              docker build -t $$TIMESTAMP_IMAGE .
+              LATEST_IMAGE="${HUB_REPO_NAME}:latest"
+              docker build -t $$TIMESTAMP_IMAGE -t $$LATEST_IMAGE .
               docker login --username "$HUB_LOGIN" --password "$HUB_PASSWORD"
               docker push $$TIMESTAMP_IMAGE
-              docker tag "${HUB_REPO_NAME}:latest" $$TIMESTAMP_IMAGE
-              docker push "${HUB_REPO_NAME}:latest"
-              echo "Backup image pushed to $HUB_REPO_NAME"
+              docker push $$LATEST_IMAGE
+              echo "Backup images pushed to $HUB_REPO_NAME"
 
             else
               echo "Nothing happened. $$LAST_MOD_TIME | $$CURRENT_MOD_TIME "
